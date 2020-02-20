@@ -30,28 +30,26 @@ func main() {
 
 func search(str string, sites []string) ([]string, error) {
 	arr := make([]string, 0, len(sites))
-	var err error
 
-	for _, v := range sites {
-		if v != "" {
-			resp, err := http.Get(v)
+	for _, site := range sites {
+		if site != "" {
+			resp, err := http.Get(site)
 			if err != nil {
-				return arr, err
+				return nil, err
 			}
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				return arr, err
+				return nil, err
 			}
 
 			defer resp.Body.Close()
 
-			stringBody := string(body)
-			i := strings.Count(stringBody, str)
-			if i > 0 {
-				arr = append(arr, v)
+			i := strings.Contains(string(body), str)
+			if i {
+				arr = append(arr, site)
 			}
 		}
 	}
 
-	return arr, err
+	return arr, nil
 }
