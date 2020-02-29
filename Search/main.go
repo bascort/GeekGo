@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -54,16 +56,12 @@ func firstHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func searchHandle(w http.ResponseWriter, r *http.Request) {
-	if r.Body == nil {
+	resp, err := ioutil.ReadAll(r.Body)
+	if err != nil {
 		http.Error(w, "Error: body = nil", 500)
 		return
 	}
-	resp, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
 
 	jsonStruct := new(RequestFormat)
 
@@ -74,8 +72,8 @@ func searchHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sites, errsString := search(jsonStruct.Search, jsonStruct.Sites)
-	if errsString != "" {
-		http.Error(w, errsString, 500)
+	if len(errsString) != 0 {
+		_, _ = io.Copy(os.Stdout, strings.NewReader(errsString))
 	}
 
 	b, err := json.Marshal(sites)
@@ -92,7 +90,7 @@ func search(str string, sites []Site) ([]Site, string) {
 	errs := ""
 
 	for _, site := range sites {
-		if site != "" {
+		if len(site) != 0 {
 			resp, err := http.Get(string(site))
 			if err != nil {
 				errs += "Error GET: " + err.Error() + "\n"
